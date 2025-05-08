@@ -1,52 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-function HomePage() {
-  const [user, setUser] = useState(null);
+import MenuBar from "./components/MenuBarComponent";
+
+export default function HomePage() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const response = await fetch("/api/user", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    let isMounted = true;
+    axios
+      .get("/api/session/", { withCredentials: true })
+      .then((res) => {
+        if (isMounted) {
+          if (res.data.isAuthenticated) {
+            navigate("/main", { replace: true });
+          } else {
+            setLoading(false);
+          }
         }
-        const data = await response.json();
-        setUser(data);
-        setLoading(false);
-      } catch (error) {
-        setError(error);
-        setLoading(false);
-      }
-    }
+      })
+      .catch(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
-    fetchUser();
-  }, []);
-
-  if (loading) {
-    return <p>Loading user data...</p>;
-  }
-
-  if (error) {
-    return <p>Error fetching user: {error.message}</p>;
-  }
+  if (loading) return <div>Загрузка...</div>;
 
   return (
-    <div>
-      <h2>User Information</h2>
-      <p>Name: {user.name}</p>
-      <p>Age: {user.age}</p>
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
+      <MenuBar />
+      <h1 className="text-3xl font-bold text-gray-900">Добро пожаловать!</h1>
     </div>
   );
 }
-
-export default HomePage;
