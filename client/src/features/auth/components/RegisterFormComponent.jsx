@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-export default function RegistrationForm() {
+export default function RegistrationFormComponent() {
   const [registerForm, setRegisterForm] = useState({
     firstName: "",
     lastName: "",
@@ -13,8 +15,9 @@ export default function RegistrationForm() {
     isAdult: "",
     gender: "",
   });
-
   const [message, setMessage] = useState("");
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -24,13 +27,38 @@ export default function RegistrationForm() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!registerForm.isAcceptRules) {
       setMessage("Вы должны принять правила!");
       return;
     }
-    setMessage("Успешно!");
+    if (registerForm.password !== registerForm.confirmPassword) {
+      setMessage("Пароли не совпадают!");
+      return;
+    }
+
+    const userData = {
+      firstName: registerForm.firstName,
+      lastName: registerForm.lastName,
+      username: registerForm.username,
+      email: registerForm.email,
+      isAdult: registerForm.isAdult === "true",
+      gender: registerForm.gender,
+      password: registerForm.password,
+    };
+
+    try {
+      const response = await axios.post("/api/auth/register", userData);
+      setMessage(response.data);
+      navigate("/main");
+    } catch (error) {
+      if (error.response) {
+        setMessage(error.response.data);
+      } else {
+        setMessage("Ошибка при регистрации");
+      }
+    }
   };
 
   return (

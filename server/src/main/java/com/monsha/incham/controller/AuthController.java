@@ -1,6 +1,7 @@
 package com.monsha.incham.controller;
 
-import com.monsha.incham.model.UserForm;
+import com.monsha.incham.entity.User;
+import com.monsha.incham.model.UserDto;
 import com.monsha.incham.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,16 +10,31 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    @Autowired
     private UserService userService;
 
+    public AuthController(UserService userService) {
+        this.userService = userService;
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserForm form) {
-        boolean success = userService.register(form);
-        if (success) {
-            return ResponseEntity.ok().body("Registration successful");
-        } else {
-            return ResponseEntity.badRequest().body("Username already exists");
+    public ResponseEntity<?> registerUser(@RequestBody UserDto dto) {
+        try {
+            System.out.println("Регистрация пользователя: " + dto.getUsername());
+            User user = new User();
+            user.setFirstName(dto.getFirstName());
+            user.setLastName(dto.getLastName());
+            user.setUsername(dto.getUsername());
+            user.setEmail(dto.getEmail());
+            user.setIsAdult(dto.getIsAdult());
+            user.setGender(dto.getGender());
+            user.setPasswordHash(dto.getPassword());
+
+            User savedUser = userService.registerUser(user);
+            System.out.println("Пользователь сохранён: " + savedUser.getId());
+            return ResponseEntity.ok("Пользователь успешно зарегистрирован");
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

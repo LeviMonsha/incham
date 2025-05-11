@@ -1,13 +1,16 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as Form from "@radix-ui/react-form";
+import axios from "axios";
 
 export default function LoginFormComponent() {
   const [loginForm, setLoginForm] = useState({
     email: "",
     password: "",
   });
-
   const [message, setMessage] = useState("");
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,7 +26,9 @@ export default function LoginFormComponent() {
       setMessage("Пожалуйста, заполните все поля.");
       return;
     }
+
     setMessage("Успешно!");
+    navigate("/main");
   };
 
   return (

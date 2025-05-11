@@ -45,5 +45,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.4"
-  }
+  },
+  "proxy": "http://server:8080"
 }
