@@ -20,15 +20,30 @@ export default function LoginFormComponent() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!loginForm.email || !loginForm.password) {
-      setMessage("Пожалуйста, заполните все поля.");
+      setMessage("Пожалуйста, заполните все поля");
       return;
     }
 
-    setMessage("Успешно!");
-    navigate("/main");
+    const userData = {
+      email: loginForm.email,
+      password: loginForm.password,
+    };
+
+    try {
+      const response = await axios.post("/api/auth/login", userData);
+      setMessage("Вход выполнен успешно");
+      navigate("/main");
+    } catch (error) {
+      if (error.response?.data) {
+        setMessage(error.response.data);
+      } else {
+        setMessage("Ошибка при входе");
+      }
+    }
   };
 
   return (

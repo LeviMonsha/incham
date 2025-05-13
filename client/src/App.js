@@ -38,9 +38,9 @@ function App() {
           <Route
             path="/main"
             element={
-              <PrivateRoute>
-                <MainPage />
-              </PrivateRoute>
+              // <PrivateRoute>
+              <MainPage />
+              // </PrivateRoute>
             }
           />
         </Routes>

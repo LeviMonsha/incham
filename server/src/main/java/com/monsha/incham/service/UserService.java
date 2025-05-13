@@ -1,33 +1,99 @@
 package com.monsha.incham.service;
 
-import com.monsha.incham.entity.User;
-import com.monsha.incham.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.monsha.incham.exception.UserAlreadyExistsException;
+import com.monsha.incham.exception.UserNotFoundException;
+import com.monsha.incham.dto.request.UserRegisterRequest;
+import com.monsha.incham.entity.User;
+import com.monsha.incham.mapper.UserMapper;
+import com.monsha.incham.repository.UserRepository;
 
 @Service
 public class UserService {
-    private UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
         this.userRepository = userRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
-    public User registerUser(User user) {
-        System.out.println("Проверка пользователя: " + user.getUsername());
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            throw new RuntimeException("Username уже занят");
-        }
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("Email уже занят");
-        }
+    public List<UserRegisterRequest> getUsers() {
+        return userRepository.findAll().stream()
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
+    }
 
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+    @Transactional
+    public UserRegisterRequest create(UserRegisterRequest userDto) {
+        checkIfUserExists(userDto);
+        User user = userMapper.toEntity(userDto);
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        user.setCreated(LocalDate.now());
         User savedUser = userRepository.save(user);
-        System.out.println("Сохранён пользователь с ID: " + savedUser.getId());
-        return savedUser;
+        return userMapper.toDto(savedUser);
+    }
+
+    public void checkIfUserExists(UserRegisterRequest userDto) {
+        boolean emailExists = !userRepository.findAllByEmail(userDto.getEmail()).isEmpty();
+        boolean usernameExists = !userRepository.findAllByUsername(userDto.getUsername()).isEmpty();
+
+        if (emailExists && usernameExists) {
+            throw new UserAlreadyExistsException("Пользователь с таким имейлом и логином уже существует");
+        }
+        if (emailExists) {
+            throw new UserAlreadyExistsException("Пользователь с таким имейлом уже существует");
+        }
+        if (usernameExists) {
+            throw new UserAlreadyExistsException("Пользователь с таким логином уже существует");
+        }
+    }
+
+    public UserRegisterRequest findByUsername(String username) {
+        User user = userRepository.findAllByUsername(username).stream().findFirst()
+                .orElseThrow(() -> new UserNotFoundException("Пользователь с таким логином '" + username + "' не существует"));
+        return userMapper.toDto(user);
+    }
+
+    public boolean checkPassword(String email, String rawPassword) {
+        User user = userRepository.findAllByEmail(email).stream().findFirst()
+                .orElseThrow(() -> new UserNotFoundException("Пользователь с таким логином '" + email + "' не существует"));
+        return passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+
+    @Transactional
+    public void updateTheme(String username, boolean isDarkTheme) {
+        userRepository.updateUserTheme(username, isDarkTheme);
+    }
+
+    public long getTotalUsers() {
+        return userRepository.count();
+    }
+
+    public long getTotalLastMonthUsers() {
+        LocalDate lastMonthDate = LocalDate.now().minusMonths(1);
+        return userRepository.countUsersSince(lastMonthDate);
+    }
+
+    public UserRegisterRequest getLastUser() {
+        User user = userRepository.findTopByOrderByCreatedDesc()
+                .orElseThrow(() -> new UserNotFoundException("Пользователи не найдены"));
+        return userMapper.toDto(user);
+    }
+
+    public List<UserRegisterRequest> findLastNameUsers(String lastname) {
+        return userRepository.findAllByLastName(lastname).stream()
+                .map(userMapper::toDto)
+                .collect(Collectors.toList());
     }
 }

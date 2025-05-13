@@ -11,28 +11,38 @@ export default function RegistrationFormComponent() {
     email: "",
     password: "",
     confirmPassword: "",
-    isAcceptRules: false,
     isAdult: "",
     gender: "",
+    isDarkTheme: false,
   });
+
+  const [isAcceptRules, setAcceptRules] = useState(false);
+
   const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setRegisterForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+
+    if (name === "isAcceptRules") {
+      setAcceptRules(checked);
+    } else {
+      setRegisterForm((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!registerForm.isAcceptRules) {
+
+    if (!isAcceptRules) {
       setMessage("Вы должны принять правила!");
       return;
     }
+
     if (registerForm.password !== registerForm.confirmPassword) {
       setMessage("Пароли не совпадают!");
       return;
@@ -43,15 +53,16 @@ export default function RegistrationFormComponent() {
       lastName: registerForm.lastName,
       username: registerForm.username,
       email: registerForm.email,
-      isAdult: registerForm.isAdult === "true",
-      gender: registerForm.gender,
       password: registerForm.password,
+      isAdult: registerForm.isAdult === "true" || registerForm.isAdult === true,
+      gender: registerForm.gender,
+      isDarkTheme: registerForm.isDarkTheme,
     };
 
     try {
       const response = await axios.post("/api/auth/register", userData);
       setMessage(response.data);
-      navigate("/main");
+      navigate("/auth?mode=login");
     } catch (error) {
       if (error.response) {
         setMessage(error.response.data);
@@ -77,6 +88,7 @@ export default function RegistrationFormComponent() {
             onChange={handleChange}
             autoComplete="off"
             className="w-full border rounded px-3 py-2"
+            required
           />
         </Form.Control>
       </Form.Field>
@@ -92,6 +104,7 @@ export default function RegistrationFormComponent() {
             onChange={handleChange}
             autoComplete="off"
             className="w-full border rounded px-3 py-2"
+            required
           />
         </Form.Control>
       </Form.Field>
@@ -162,7 +175,7 @@ export default function RegistrationFormComponent() {
             <input
               type="checkbox"
               name="isAcceptRules"
-              checked={registerForm.isAcceptRules}
+              checked={isAcceptRules}
               onChange={handleChange}
               className="mr-2"
             />
@@ -179,6 +192,7 @@ export default function RegistrationFormComponent() {
             value={registerForm.isAdult}
             onChange={handleChange}
             className="w-full border rounded px-3 py-2"
+            required
           >
             <option value="">выберите</option>
             <option value="true">Да</option>
@@ -199,6 +213,7 @@ export default function RegistrationFormComponent() {
                 checked={registerForm.gender === "Мужской"}
                 onChange={handleChange}
                 className="mr-2"
+                required
               />
             </Form.Control>
             Мужской
@@ -212,6 +227,7 @@ export default function RegistrationFormComponent() {
                 checked={registerForm.gender === "Женский"}
                 onChange={handleChange}
                 className="mr-2"
+                required
               />
             </Form.Control>
             Женский
