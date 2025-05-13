@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -8,9 +8,12 @@ import {
 import axios from "axios";
 import "@radix-ui/themes/styles.css";
 
+import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
 import AuthPage from "./features/auth/AuthPage";
 import HomePage from "./features/home/HomePage";
 import MainPage from "./features/content/MainPage";
+import ProfilePage from "./features/content/profile/ProfilePage";
+import SettingsPage from "./features/content/settings/SettingsPage";
 
 import "./styles/App.css";
 
@@ -28,25 +31,39 @@ function PrivateRoute({ children }) {
   return children;
 }
 
-function App() {
+const AppContainer = () => {
+  const { theme } = useContext(ThemeContext);
+
   return (
-    <div>
-      <Router>
-        <Routes>
-          <Route exact path="/auth" element={<AuthPage />} />
-          <Route exact path="/" element={<HomePage />} />
-          <Route
-            path="/main"
-            element={
-              // <PrivateRoute>
-              <MainPage />
-              // </PrivateRoute>
-            }
-          />
-        </Routes>
-      </Router>
+    <div
+      className={`min-h-screen ${theme === "dark" ? "bg-black" : "bg-white"}`}
+    >
+      <Routes>
+        <Route exact path="/auth" element={<AuthPage />} />
+        <Route exact path="/" element={<HomePage />} />
+        <Route
+          path="/main"
+          element={
+            // <PrivateRoute>
+            <MainPage />
+            // </PrivateRoute>
+          }
+        />
+        <Route exact path="/profile" element={<ProfilePage />} />
+        <Route exact path="/settings" element={<SettingsPage />} />
+      </Routes>
     </div>
   );
-}
+};
+
+const App = () => {
+  return (
+    <ThemeProvider>
+      <Router>
+        <AppContainer />
+      </Router>
+    </ThemeProvider>
+  );
+};
 
 export default App;
