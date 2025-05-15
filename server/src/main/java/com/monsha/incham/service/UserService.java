@@ -30,7 +30,7 @@ public class UserService {
 
     public List<UserRegisterRequest> getUsers() {
         return userRepository.findAll().stream()
-                .map(userMapper::toDto)
+                .map(userMapper::toRegisterRequest)
                 .collect(Collectors.toList());
     }
 
@@ -41,7 +41,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setCreated(LocalDate.now());
         User savedUser = userRepository.save(user);
-        return userMapper.toDto(savedUser);
+        return userMapper.toRegisterRequest(savedUser);
     }
 
     public void checkIfUserExists(UserRegisterRequest userDto) {
@@ -62,7 +62,13 @@ public class UserService {
     public UserRegisterRequest findByUsername(String username) {
         User user = userRepository.findAllByUsername(username).stream().findFirst()
                 .orElseThrow(() -> new UserNotFoundException("Пользователь с таким логином '" + username + "' не существует"));
-        return userMapper.toDto(user);
+        return userMapper.toRegisterRequest(user);
+    }
+
+    public UserRegisterRequest findByEmail(String email) {
+        User user = userRepository.findAllByEmail(email).stream().findFirst()
+                .orElseThrow(() -> new UserNotFoundException("Пользователь с таким email '" + email + "' не существует"));
+        return userMapper.toRegisterRequest(user);
     }
 
     public boolean checkPassword(String email, String rawPassword) {
@@ -86,14 +92,14 @@ public class UserService {
     }
 
     public UserRegisterRequest getLastUser() {
-        User user = userRepository.findTopByOrderByCreatedDesc()
+        User user = userRepository.findTopByOrderByIdDesc()
                 .orElseThrow(() -> new UserNotFoundException("Пользователи не найдены"));
-        return userMapper.toDto(user);
+        return userMapper.toRegisterRequest(user);
     }
 
     public List<UserRegisterRequest> findLastNameUsers(String lastname) {
         return userRepository.findAllByLastName(lastname).stream()
-                .map(userMapper::toDto)
+                .map(userMapper::toRegisterRequest)
                 .collect(Collectors.toList());
     }
 }

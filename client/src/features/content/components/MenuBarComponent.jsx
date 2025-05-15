@@ -32,6 +32,14 @@ export default function MenuBar() {
             Настройки
           </NavigationMenu.Link>
         </NavigationMenu.Item>
+        <NavigationMenu.Item>
+          <NavigationMenu.Link
+            href="/admin"
+            className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition"
+          >
+            Секрет
+          </NavigationMenu.Link>
+        </NavigationMenu.Item>
       </NavigationMenu.List>
     </NavigationMenu.Root>
   );

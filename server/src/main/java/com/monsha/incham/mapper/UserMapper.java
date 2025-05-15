@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserMapper {
 
-    public UserRegisterRequest toDto(User user) {
+    public UserRegisterRequest toRegisterRequest(User user) {
         UserRegisterRequest dto = new UserRegisterRequest();
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());

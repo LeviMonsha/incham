@@ -1,31 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
 import LoginForm from "./components/LoginFormComponent";
 import RegisterForm from "./components/RegisterFormComponent";
 
 export default function AuthPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get("mode") === "register" ? "register" : "login";
-
-  useEffect(() => {
-    axios
-      .get("/api/session", { withCredentials: true })
-      .then((res) => {
-        if (res.data.authenticated) {
-          navigate("/main");
-        } else {
-          setIsAuthenticated(false);
-        }
-      })
-      .catch(() => setIsAuthenticated(false));
-  }, [navigate]);
-
-  if (isAuthenticated === null) {
-    return <div>Загрузка...</div>;
-  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">

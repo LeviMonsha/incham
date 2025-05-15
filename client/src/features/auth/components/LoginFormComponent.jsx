@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as Form from "@radix-ui/react-form";
 import axios from "axios";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginFormComponent() {
   const [loginForm, setLoginForm] = useState({
@@ -9,7 +10,8 @@ export default function LoginFormComponent() {
     password: "",
   });
   const [message, setMessage] = useState("");
-
+  const [captchaValue, setCaptchaValue] = useState(null);
+  const recaptchaRef = useRef(null);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -20,6 +22,11 @@ export default function LoginFormComponent() {
     }));
   };
 
+  const handleCaptchaChange = (value) => {
+    setCaptchaValue(value);
+    setMessage("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -28,21 +35,22 @@ export default function LoginFormComponent() {
       return;
     }
 
-    const userData = {
-      email: loginForm.email,
-      password: loginForm.password,
-    };
+    if (!captchaValue) {
+      setMessage("Пожалуйста, подтвердите, что вы не робот");
+      return;
+    }
 
     try {
-      const response = await axios.post("/api/auth/login", userData);
-      setMessage("Вход выполнен успешно");
+      await axios.post("/api/secure/captcha", { recaptchaToken: captchaValue });
       navigate("/main");
     } catch (error) {
-      if (error.response?.data) {
-        setMessage(error.response.data);
-      } else {
-        setMessage("Ошибка при входе");
+      setMessage(
+        error.response?.data || "Ошибка проверки капчи. Попробуйте ещё раз."
+      );
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
       }
+      setCaptchaValue(null);
     }
   };
 
@@ -83,10 +91,19 @@ export default function LoginFormComponent() {
         </Form.Control>
       </Form.Field>
 
+      <div className="mb-4 flex justify-center">
+        <ReCAPTCHA
+          sitekey={process.env.REACT_APP_CAPTCHA_API_KEY}
+          onChange={handleCaptchaChange}
+          ref={recaptchaRef}
+        />
+      </div>
+
       <Form.Submit asChild>
         <button
           type="submit"
           className="w-full bg-black text-white py-2 rounded hover:bg-gray-700"
+          disabled={!captchaValue}
         >
           Войти
         </button>

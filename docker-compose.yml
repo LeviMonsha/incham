@@ -45,10 +45,14 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        REACT_APP_CAPTCHA_API_KEY: ${CAPTCHA_API_KEY}
     ports:
       - "${CLIENT_PORT}:3000"
     depends_on:
       - server
+    environment:
+      REACT_APP_CAPTCHA_API_KEY: ${CAPTCHA_API_KEY}
 
   nginx:
     container_name: nginx

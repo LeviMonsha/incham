@@ -27,7 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) FROM User u WHERE u.created >= :lastMonthDate")
     long countUsersSince(@Param("lastMonthDate") LocalDate lastMonthDate);
 
-    Optional<User> findTopByOrderByCreatedDesc();
+    Optional<User> findTopByOrderByIdDesc();
 
     List<User> findAllByLastName(String lastName);
 }

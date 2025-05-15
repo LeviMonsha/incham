@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import MenuBar from "./components/MenuBarComponent";
+import CookieConsentComponent from "./components/CookieConsentComponent";
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
@@ -11,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     let isMounted = true;
     axios
-      .get("/api/session/", { withCredentials: true })
+      .get("/api/secure/session", { withCredentials: true })
       .then((res) => {
         if (isMounted) {
           if (res.data.isAuthenticated) {
@@ -35,6 +36,7 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
       <MenuBar />
       <h1 className="text-3xl font-bold text-gray-900">Добро пожаловать!</h1>
+      <CookieConsentComponent />
     </div>
   );
 }

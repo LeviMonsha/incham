@@ -17,9 +17,7 @@ export default function RegistrationFormComponent() {
   });
 
   const [isAcceptRules, setAcceptRules] = useState(false);
-
   const [message, setMessage] = useState("");
-
   const navigate = useNavigate();
 
   const handleChange = (e) => {

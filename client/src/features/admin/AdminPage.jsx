@@ -1,11 +1,13 @@
-import { AdminPanelComponent } from "./components/AdminPanelComponent";
+import AdminPanelComponent from "./components/AdminPanelComponent";
+import MenuBar from "../content/components/MenuBarComponent";
 
-function AdminPanelPage() {
+function AdminPage() {
   return (
     <div>
+      <MenuBar />
       <AdminPanelComponent />
     </div>
   );
 }
 
-export default AdminPanelPage;
+export default AdminPage;

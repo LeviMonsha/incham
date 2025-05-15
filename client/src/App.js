@@ -14,6 +14,7 @@ import HomePage from "./features/home/HomePage";
 import MainPage from "./features/content/MainPage";
 import ProfilePage from "./features/content/profile/ProfilePage";
 import SettingsPage from "./features/content/settings/SettingsPage";
+import AdminPage from "./features/admin/AdminPage";
 
 import "./styles/App.css";
 
@@ -22,7 +23,7 @@ function PrivateRoute({ children }) {
 
   useEffect(() => {
     axios
-      .get("/api/session", { withCredentials: true })
+      .get("/api/secure/session", { withCredentials: true })
       .then((res) => setIsAuthenticated(res.data.authenticated))
       .catch(() => setIsAuthenticated(false));
   }, []);
@@ -51,6 +52,7 @@ const AppContainer = () => {
         />
         <Route exact path="/profile" element={<ProfilePage />} />
         <Route exact path="/settings" element={<SettingsPage />} />
+        <Route exact path="/admin" element={<AdminPage />} />
       </Routes>
     </div>
   );
