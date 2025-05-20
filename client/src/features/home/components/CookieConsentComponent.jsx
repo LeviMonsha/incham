@@ -41,7 +41,7 @@ export default function CookieConsentComponent() {
       </span>
       <button
         onClick={acceptCookies}
-        className="ml-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors duration-200"
+        className="ml-4 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors duration-200"
       >
         Принять
       </button>
