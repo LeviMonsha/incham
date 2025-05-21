@@ -55,24 +55,24 @@ public class AdminController {
     return ResponseEntity.ok(user);
   }
 
-  public static class SurnameRequest {
-    private String surname;
+  public static class LastNameRequest {
+    private String lastName;
 
-    public String getSurname() {
-      return surname;
+    public String getlastName() {
+      return lastName;
     }
 
-    public void setSurname(String surname) {
-      this.surname = surname;
+    public void setlastName(String lastName) {
+      this.lastName = lastName;
     }
   }
 
   @PostMapping("/find-surname-users")
-  public ResponseEntity<List<UserRegisterRequest>> findSurnameUsers(@RequestBody SurnameRequest request) {
-    if (request.getSurname() == null || request.getSurname().isEmpty()) {
+  public ResponseEntity<List<UserRegisterRequest>> findlastNameUsers(@RequestBody LastNameRequest request) {
+    if (request.getlastName() == null || request.getlastName().isEmpty()) {
       return ResponseEntity.badRequest().build();
     }
-    List<UserRegisterRequest> users = userService.findLastNameUsers(request.getSurname());
+    List<UserRegisterRequest> users = userService.findLastNameUsers(request.getlastName());
     return ResponseEntity.ok(users);
   }
 }
