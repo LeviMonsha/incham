@@ -18,20 +18,6 @@ import AdminPage from "./features/admin/AdminPage";
 
 import "./styles/App.css";
 
-// function PrivateRoute({ children }) {
-//   const [isAuthenticated, setIsAuthenticated] = useState(null);
-
-//   useEffect(() => {
-//     axios
-//       .get("/api/secure/session", { withCredentials: true })
-//       .then((res) => setIsAuthenticated(res.data.authenticated))
-//       .catch(() => setIsAuthenticated(false));
-//   }, []);
-//   if (isAuthenticated === null) return <div>Загрузка...</div>;
-//   if (!isAuthenticated) return <Navigate to="/auth" replace />;
-//   return children;
-// }
-
 const AppContainer = () => {
   const { theme } = useContext(ThemeContext);
 
@@ -42,14 +28,7 @@ const AppContainer = () => {
       <Routes>
         <Route exact path="/auth" element={<AuthPage />} />
         <Route exact path="/" element={<HomePage />} />
-        <Route
-          path="/main"
-          element={
-            // <PrivateRoute>
-            <MainPage />
-            // </PrivateRoute>
-          }
-        />
+        <Route path="/main" element={<MainPage />} />
         <Route exact path="/profile" element={<ProfilePage />} />
         <Route exact path="/settings" element={<SettingsPage />} />
         <Route exact path="/admin" element={<AdminPage />} />

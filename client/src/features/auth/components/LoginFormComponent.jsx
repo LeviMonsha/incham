@@ -41,7 +41,6 @@ export default function LoginFormComponent() {
     }
 
     try {
-      // await axios.post("/api/secure/captcha", { recaptchaToken: captchaValue });
       const response = await axios.post("/api/auth/login", loginForm, {
         headers: { "Content-Type": "application/json" },
         withCredentials: true,

@@ -80,11 +80,11 @@ const ProfilePage = () => {
                 </li>
                 <li>
                   <span className="font-semibold">Пол:</span>{" "}
-                  {profileData.ismale ? "Мужской" : "Женский"}
+                  {profileData.gender ? "Мужской" : "Женский"}
                 </li>
                 <li>
                   <span className="font-semibold">Взрослый:</span>{" "}
-                  {profileData.isadult ? "Да" : "Нет"}
+                  {profileData.isAdult ? "Да" : "Нет"}
                 </li>
               </ul>
               <button
