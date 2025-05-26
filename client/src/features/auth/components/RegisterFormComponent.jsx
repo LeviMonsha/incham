@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import * as Form from "@radix-ui/react-form";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -18,7 +18,23 @@ export default function RegistrationFormComponent() {
 
   const [isAcceptRules, setAcceptRules] = useState(false);
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const debounceRef = useRef({});
+
+  const validateFieldServer = (name, value) => {
+    if (debounceRef.current[name]) clearTimeout(debounceRef.current[name]);
+    debounceRef.current[name] = setTimeout(async () => {
+      try {
+        await axios.post("/api/auth/validate-field", { [name]: value });
+        setErrors((prev) => ({ ...prev, [name]: null }));
+      } catch (err) {
+        if (err.response && err.response.data) {
+          setErrors((prev) => ({ ...prev, ...err.response.data }));
+        }
+      }
+    }, 400);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -26,10 +42,12 @@ export default function RegistrationFormComponent() {
     if (name === "isAcceptRules") {
       setAcceptRules(checked);
     } else {
+      const fieldValue = type === "checkbox" ? checked : value;
       setRegisterForm((prev) => ({
         ...prev,
-        [name]: type === "checkbox" ? checked : value,
+        [name]: fieldValue,
       }));
+      validateFieldServer(name, fieldValue);
     }
   };
 
@@ -42,6 +60,10 @@ export default function RegistrationFormComponent() {
     }
 
     if (registerForm.password !== registerForm.confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: "Пароли не совпадают!",
+      }));
       setMessage("Пароли не совпадают!");
       return;
     }
@@ -52,18 +74,20 @@ export default function RegistrationFormComponent() {
       username: registerForm.username,
       email: registerForm.email,
       password: registerForm.password,
-      isAdult: registerForm.isAdult === "true" || registerForm.isAdult === true,
+      isAdult: registerForm.isAdult === "true",
       gender: registerForm.gender,
       isDarkTheme: registerForm.isDarkTheme,
     };
 
     try {
       const response = await axios.post("/api/auth/register", userData);
-      setMessage(response.data);
-      navigate("/auth?mode=login");
+      setErrors({});
+      setMessage(response.data.message);
+      navigate("/auth");
     } catch (error) {
-      if (error.response) {
-        setMessage(error.response.data);
+      if (error.response && error.response.data) {
+        setErrors(error.response.data);
+        setMessage("");
       } else {
         setMessage("Ошибка при регистрации");
       }
@@ -85,10 +109,15 @@ export default function RegistrationFormComponent() {
             value={registerForm.firstName}
             onChange={handleChange}
             autoComplete="off"
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.firstName ? "border-red-500" : ""
+            }`}
             required
           />
         </Form.Control>
+        {errors.firstName && (
+          <div className="text-red-600 mt-1">{errors.firstName}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="lastName" className="mb-4">
@@ -101,10 +130,15 @@ export default function RegistrationFormComponent() {
             value={registerForm.lastName}
             onChange={handleChange}
             autoComplete="off"
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.lastName ? "border-red-500" : ""
+            }`}
             required
           />
         </Form.Control>
+        {errors.lastName && (
+          <div className="text-red-600 mt-1">{errors.lastName}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="username" className="mb-4">
@@ -117,9 +151,14 @@ export default function RegistrationFormComponent() {
             value={registerForm.username}
             onChange={handleChange}
             required
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.username ? "border-red-500" : ""
+            }`}
           />
         </Form.Control>
+        {errors.username && (
+          <div className="text-red-600 mt-1">{errors.username}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="email" className="mb-4">
@@ -132,9 +171,14 @@ export default function RegistrationFormComponent() {
             value={registerForm.email}
             onChange={handleChange}
             required
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.email ? "border-red-500" : ""
+            }`}
           />
         </Form.Control>
+        {errors.email && (
+          <div className="text-red-600 mt-1">{errors.email}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="password" className="mb-4">
@@ -147,9 +191,14 @@ export default function RegistrationFormComponent() {
             value={registerForm.password}
             onChange={handleChange}
             required
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.password ? "border-red-500" : ""
+            }`}
           />
         </Form.Control>
+        {errors.password && (
+          <div className="text-red-600 mt-1">{errors.password}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="confirmPassword" className="mb-4">
@@ -162,9 +211,14 @@ export default function RegistrationFormComponent() {
             onChange={handleChange}
             autoComplete="new-password"
             required
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.confirmPassword ? "border-red-500" : ""
+            }`}
           />
         </Form.Control>
+        {errors.confirmPassword && (
+          <div className="text-red-600 mt-1">{errors.confirmPassword}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="isAcceptRules" className="mb-4">
@@ -189,7 +243,9 @@ export default function RegistrationFormComponent() {
             name="isAdult"
             value={registerForm.isAdult}
             onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
+            className={`w-full border rounded px-3 py-2 ${
+              errors.isAdult ? "border-red-500" : ""
+            }`}
             required
           >
             <option value="">выберите</option>
@@ -197,6 +253,9 @@ export default function RegistrationFormComponent() {
             <option value="false">Нет</option>
           </select>
         </Form.Control>
+        {errors.isAdult && (
+          <div className="text-red-600 mt-1">{errors.isAdult}</div>
+        )}
       </Form.Field>
 
       <Form.Field name="gender" className="mb-4">
@@ -231,6 +290,9 @@ export default function RegistrationFormComponent() {
             Женский
           </label>
         </div>
+        {errors.gender && (
+          <div className="text-red-600 mt-1">{errors.gender}</div>
+        )}
       </Form.Field>
 
       <Form.Submit asChild>

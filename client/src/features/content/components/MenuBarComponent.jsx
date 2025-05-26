@@ -7,7 +7,7 @@ export default function MenuBar() {
       <NavigationMenu.List className="flex gap-4">
         <NavigationMenu.Item>
           <NavigationMenu.Link
-            href="/"
+            href="/main"
             className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition"
           >
             <HomeIcon />

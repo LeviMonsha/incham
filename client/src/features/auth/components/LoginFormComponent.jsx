@@ -41,14 +41,24 @@ export default function LoginFormComponent() {
     }
 
     try {
-      await axios.post("/api/secure/captcha", { recaptchaToken: captchaValue });
-      navigate("/main");
+      // await axios.post("/api/secure/captcha", { recaptchaToken: captchaValue });
+      const response = await axios.post("/api/auth/login", loginForm, {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true,
+      });
+      if (response.status === 200) {
+        navigate("/main");
+      } else {
+        setMessage("Login error. Please try again.");
+        recaptchaRef.current?.reset();
+        setCaptchaValue(null);
+      }
     } catch (error) {
       setMessage(
         error.response?.data || "Ошибка проверки капчи. Попробуйте ещё раз."
       );
       if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
+        recaptchaRef.current?.reset();
       }
       setCaptchaValue(null);
     }

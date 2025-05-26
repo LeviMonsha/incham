@@ -22,11 +22,11 @@ public class SecurityController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @GetMapping("/session")
-    public ResponseEntity<?> checkSession(Authentication authentication) {
-        boolean authenticated = authentication != null && authentication.isAuthenticated();
-        return ResponseEntity.ok(Map.of("authenticated", authenticated));
-    }
+    // @GetMapping("/session")
+    // public ResponseEntity<?> checkSession(Authentication authentication) {
+    //     boolean authenticated = authentication != null && authentication.isAuthenticated();
+    //     return ResponseEntity.ok(Map.of("authenticated", authenticated));
+    // }
 
     @PostMapping("/captcha")
     public ResponseEntity<String> verifyCaptcha(@RequestBody Map<String, String> body) {

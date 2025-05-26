@@ -1,13 +1,8 @@
 package com.monsha.incham.controller;
 
-import com.monsha.incham.dto.request.UserLoginRequest;
-import com.monsha.incham.dto.request.UserRegisterRequest;
-import com.monsha.incham.entity.User;
-import com.monsha.incham.exception.UserNotFoundException;
-import com.monsha.incham.service.UserService;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,64 +10,99 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import com.monsha.incham.dto.request.UserLoginRequest;
+import com.monsha.incham.dto.request.UserRegisterRequest;
+import com.monsha.incham.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserService userService;
-
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    public AuthController(UserService userService) {
-        this.userService = userService;
-    }
+    @Autowired
+    private UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserLoginRequest loginRequest, HttpServletRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody UserLoginRequest loginRequest,
+                                BindingResult bindingResult,
+                                HttpServletRequest request) {
+        if (bindingResult.hasErrors()) {
+        }
+
         try {
-            boolean valid = userService.checkPassword(loginRequest.getEmail(), loginRequest.getPassword());
-            if (!valid) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверный логин или пароль");
-            }
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    loginRequest.getEmail(),
+                    loginRequest.getPassword()
+                )
+            );
 
-            UserRegisterRequest user = userService.findByEmail(loginRequest.getEmail());
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не найден");
-            }
-
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword());
-            Authentication authentication = authenticationManager.authenticate(authToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
             request.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-            return ResponseEntity.ok(Map.of("message", "Успешная аутентификация для пользователя: " + user.getEmail()));
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не найден");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка сервера");
+            return ResponseEntity.ok(Map.of("message", "Успешная аутентификация"));
+        } catch (AuthenticationException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверный логин или пароль");
         }
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegisterRequest dto, BindingResult result) {
-        if (result.hasErrors()) {
-            return ResponseEntity.badRequest().body("Некорректные данные");
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegisterRequest dto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                .collect(Collectors.toMap(
+                    fieldError -> fieldError.getField(),
+                    fieldError -> fieldError.getDefaultMessage()
+                ));
+            return ResponseEntity.badRequest().body(errors);
         }
 
         try {
             UserRegisterRequest createdUser = userService.create(dto);
             return ResponseEntity.ok(Map.of("message", "Пользователь успешно зарегистрирован", "username", createdUser.getUsername()));
         } catch (RuntimeException e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("general", e.getMessage()));
         }
+    }
+
+    @PostMapping("/validate-field")
+    public ResponseEntity<?> validateField(@RequestBody Map<String, String> payload) {
+        String field = payload.keySet().iterator().next();
+        String value = payload.get(field);
+
+        Map<String, String> errors = new HashMap<>();
+
+        switch (field) {
+            case "email":
+                if (value == null || value.isBlank()) {
+                    errors.put("email", "Email обязателен");
+                } else if (!value.matches("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+                    errors.put("email", "Некорректный email");
+                }
+                break;
+            case "username":
+                if (value == null || value.isBlank()) {
+                    errors.put("username", "Имя пользователя обязательно");
+                }
+                break;
+        }
+
+        if (errors.isEmpty())
+            return ResponseEntity.ok().build();
+        else
+            return ResponseEntity.badRequest().body(errors);
     }
 }
