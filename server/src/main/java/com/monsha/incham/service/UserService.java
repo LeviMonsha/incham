@@ -71,6 +71,14 @@ public class UserService {
         return userMapper.toRegisterRequest(user);
     }
 
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    public boolean usernameExists(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
     public boolean checkPassword(String email, String rawPassword) {
         User user = userRepository.findAllByEmail(email).stream().findFirst()
                 .orElseThrow(() -> new UserNotFoundException("Пользователь с таким логином '" + email + "' не существует"));

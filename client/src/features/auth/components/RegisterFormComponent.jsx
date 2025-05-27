@@ -2,9 +2,10 @@ import React, { useState, useRef } from "react";
 import * as Form from "@radix-ui/react-form";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import * as validators from "../../../utils/validators";
 
 export default function RegistrationFormComponent() {
-  const [registerForm, setRegisterForm] = useState({
+  const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     username: "",
@@ -15,84 +16,117 @@ export default function RegistrationFormComponent() {
     gender: "",
     isDarkTheme: false,
   });
-
   const [isAcceptRules, setAcceptRules] = useState(false);
-  const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const debounceRef = useRef({});
 
-  const validateFieldServer = (name, value) => {
-    if (debounceRef.current[name]) clearTimeout(debounceRef.current[name]);
-    debounceRef.current[name] = setTimeout(async () => {
-      try {
-        await axios.post("/api/auth/validate-field", { [name]: value });
-        setErrors((prev) => ({ ...prev, [name]: null }));
-      } catch (err) {
-        if (err.response && err.response.data) {
-          setErrors((prev) => ({ ...prev, ...err.response.data }));
+  const validateField = (name, value) => {
+    let error = null;
+    switch (name) {
+      case "firstName":
+        error = validators.validateName(value);
+        break;
+      case "lastName":
+        error = validators.validateSurname(value);
+        break;
+      case "email":
+        error = validators.validateEmail(value);
+        break;
+      case "username":
+        error = validators.validateLogin(value);
+        break;
+      case "password":
+        error = validators.validatePassword(value);
+        break;
+      case "confirmPassword":
+        error = validators.validateConfirmPassword(form.password, value);
+        break;
+      case "isAdult":
+        error = validators.validateIsAdult(value);
+        break;
+      case "gender":
+        error = validators.validateIsMale(value);
+        break;
+      default:
+        break;
+    }
+    setErrors((prev) => ({ ...prev, [name]: error }));
+
+    if (!error && (name === "email" || name === "username")) {
+      if (debounceRef.current[name]) clearTimeout(debounceRef.current[name]);
+      debounceRef.current[name] = setTimeout(async () => {
+        try {
+          const res = await axios.get(`/api/auth/check-${name}`, {
+            params: { [name]: value },
+          });
+          if (res.data.exists) {
+            setErrors((prev) => ({
+              ...prev,
+              [name]: `Пользователь с таким ${
+                name === "email" ? "email" : "логином"
+              } уже существует`,
+            }));
+          } else {
+            setErrors((prev) => ({ ...prev, [name]: null }));
+          }
+        } catch (e) {
+          setErrors("Ошибка сети");
         }
-      }
-    }, 400);
+      }, 400);
+    }
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     if (name === "isAcceptRules") {
       setAcceptRules(checked);
-    } else {
-      const fieldValue = type === "checkbox" ? checked : value;
-      setRegisterForm((prev) => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: fieldValue,
+        isAcceptRules: checked ? null : "Вы должны принять правила!",
       }));
-      validateFieldServer(name, fieldValue);
+      return;
     }
+    const fieldValue = type === "checkbox" ? checked : value;
+    setForm((prev) => ({ ...prev, [name]: fieldValue }));
+    validateField(name, fieldValue);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!isAcceptRules) {
-      setMessage("Вы должны принять правила!");
-      return;
-    }
-
-    if (registerForm.password !== registerForm.confirmPassword) {
-      setErrors((prev) => ({
-        ...prev,
-        confirmPassword: "Пароли не совпадают!",
-      }));
-      setMessage("Пароли не совпадают!");
-      return;
-    }
-
-    const userData = {
-      firstName: registerForm.firstName,
-      lastName: registerForm.lastName,
-      username: registerForm.username,
-      email: registerForm.email,
-      password: registerForm.password,
-      isAdult: registerForm.isAdult === "true",
-      gender: registerForm.gender,
-      isDarkTheme: registerForm.isDarkTheme,
+    const newErrors = {
+      firstName: validators.validateName(form.firstName),
+      lastName: validators.validateSurname(form.lastName),
+      email: validators.validateEmail(form.email),
+      username: validators.validateLogin(form.username),
+      password: validators.validatePassword(form.password),
+      confirmPassword: validators.validateConfirmPassword(
+        form.password,
+        form.confirmPassword
+      ),
+      isAdult: validators.validateIsAdult(form.isAdult),
+      gender: validators.validateIsMale(form.gender),
+      isAcceptRules: isAcceptRules ? null : "Вы должны принять правила!",
     };
+    const filtered = Object.fromEntries(
+      Object.entries(newErrors).filter(([_, v]) => v)
+    );
+    setErrors(filtered);
+    if (Object.keys(filtered).length > 0) return;
 
     try {
-      const response = await axios.post("/api/auth/register", userData);
-      setErrors({});
-      setMessage(response.data.message);
+      await axios.post("/api/auth/register", {
+        ...form,
+        isAdult: form.isAdult === "true",
+      });
       navigate("/auth");
     } catch (error) {
-      if (error.response && error.response.data) {
-        setErrors(error.response.data);
-        setMessage("");
-      } else {
-        setMessage("Ошибка при регистрации");
-      }
+      if (error.response && error.response.data) setErrors(error.response.data);
     }
   };
+
+  const renderError = (name) =>
+    errors[name] && <div className="text-red-600 mt-1">{errors[name]}</div>;
 
   return (
     <Form.Root
@@ -100,13 +134,11 @@ export default function RegistrationFormComponent() {
       onSubmit={handleSubmit}
     >
       <Form.Field name="firstName" className="mb-4">
-        <Form.Label className="block mb-1">Имя:</Form.Label>
+        <Form.Label>Имя:</Form.Label>
         <Form.Control asChild>
           <input
-            type="text"
             name="firstName"
-            placeholder="Иван"
-            value={registerForm.firstName}
+            value={form.firstName}
             onChange={handleChange}
             autoComplete="off"
             className={`w-full border rounded px-3 py-2 ${
@@ -115,19 +147,15 @@ export default function RegistrationFormComponent() {
             required
           />
         </Form.Control>
-        {errors.firstName && (
-          <div className="text-red-600 mt-1">{errors.firstName}</div>
-        )}
+        {renderError("firstName")}
       </Form.Field>
 
       <Form.Field name="lastName" className="mb-4">
-        <Form.Label className="block mb-1">Фамилия:</Form.Label>
+        <Form.Label>Фамилия:</Form.Label>
         <Form.Control asChild>
           <input
-            type="text"
             name="lastName"
-            placeholder="Иванов"
-            value={registerForm.lastName}
+            value={form.lastName}
             onChange={handleChange}
             autoComplete="off"
             className={`w-full border rounded px-3 py-2 ${
@@ -136,89 +164,74 @@ export default function RegistrationFormComponent() {
             required
           />
         </Form.Control>
-        {errors.lastName && (
-          <div className="text-red-600 mt-1">{errors.lastName}</div>
-        )}
+        {renderError("lastName")}
       </Form.Field>
 
       <Form.Field name="username" className="mb-4">
-        <Form.Label className="block mb-1">Имя пользователя:</Form.Label>
+        <Form.Label>Имя пользователя:</Form.Label>
         <Form.Control asChild>
           <input
-            type="text"
             name="username"
-            placeholder="Ivan"
-            value={registerForm.username}
+            value={form.username}
             onChange={handleChange}
-            required
             className={`w-full border rounded px-3 py-2 ${
               errors.username ? "border-red-500" : ""
             }`}
+            required
           />
         </Form.Control>
-        {errors.username && (
-          <div className="text-red-600 mt-1">{errors.username}</div>
-        )}
+        {renderError("username")}
       </Form.Field>
 
       <Form.Field name="email" className="mb-4">
-        <Form.Label className="block mb-1">Электронная почта:</Form.Label>
+        <Form.Label>Электронная почта:</Form.Label>
         <Form.Control asChild>
           <input
             type="email"
             name="email"
-            placeholder="ivan@email.com"
-            value={registerForm.email}
+            value={form.email}
             onChange={handleChange}
-            required
             className={`w-full border rounded px-3 py-2 ${
               errors.email ? "border-red-500" : ""
             }`}
+            required
           />
         </Form.Control>
-        {errors.email && (
-          <div className="text-red-600 mt-1">{errors.email}</div>
-        )}
+        {renderError("email")}
       </Form.Field>
 
       <Form.Field name="password" className="mb-4">
-        <Form.Label className="block mb-1">Пароль:</Form.Label>
+        <Form.Label>Пароль:</Form.Label>
         <Form.Control asChild>
           <input
             type="password"
             name="password"
-            placeholder="Pass!word123"
-            value={registerForm.password}
+            value={form.password}
             onChange={handleChange}
-            required
             className={`w-full border rounded px-3 py-2 ${
               errors.password ? "border-red-500" : ""
             }`}
+            required
           />
         </Form.Control>
-        {errors.password && (
-          <div className="text-red-600 mt-1">{errors.password}</div>
-        )}
+        {renderError("password")}
       </Form.Field>
 
       <Form.Field name="confirmPassword" className="mb-4">
-        <Form.Label className="block mb-1">Подтверждение пароля:</Form.Label>
+        <Form.Label>Подтверждение пароля:</Form.Label>
         <Form.Control asChild>
           <input
             type="password"
             name="confirmPassword"
-            value={registerForm.confirmPassword}
+            value={form.confirmPassword}
             onChange={handleChange}
-            autoComplete="new-password"
-            required
             className={`w-full border rounded px-3 py-2 ${
               errors.confirmPassword ? "border-red-500" : ""
             }`}
+            required
           />
         </Form.Control>
-        {errors.confirmPassword && (
-          <div className="text-red-600 mt-1">{errors.confirmPassword}</div>
-        )}
+        {renderError("confirmPassword")}
       </Form.Field>
 
       <Form.Field name="isAcceptRules" className="mb-4">
@@ -234,14 +247,15 @@ export default function RegistrationFormComponent() {
           </Form.Control>
           Принимаю правила...
         </Form.Label>
+        {renderError("isAcceptRules")}
       </Form.Field>
 
       <Form.Field name="isAdult" className="mb-4">
-        <Form.Label className="block mb-1">Есть 18 лет:</Form.Label>
+        <Form.Label>Есть 18 лет:</Form.Label>
         <Form.Control asChild>
           <select
             name="isAdult"
-            value={registerForm.isAdult}
+            value={form.isAdult}
             onChange={handleChange}
             className={`w-full border rounded px-3 py-2 ${
               errors.isAdult ? "border-red-500" : ""
@@ -253,13 +267,11 @@ export default function RegistrationFormComponent() {
             <option value="false">Нет</option>
           </select>
         </Form.Control>
-        {errors.isAdult && (
-          <div className="text-red-600 mt-1">{errors.isAdult}</div>
-        )}
+        {renderError("isAdult")}
       </Form.Field>
 
       <Form.Field name="gender" className="mb-4">
-        <Form.Label className="block mb-1">Пол:</Form.Label>
+        <Form.Label>Пол:</Form.Label>
         <div className="flex gap-4">
           <label className="flex items-center">
             <Form.Control asChild>
@@ -267,7 +279,7 @@ export default function RegistrationFormComponent() {
                 type="radio"
                 name="gender"
                 value="Мужской"
-                checked={registerForm.gender === "Мужской"}
+                checked={form.gender === "Мужской"}
                 onChange={handleChange}
                 className="mr-2"
                 required
@@ -281,7 +293,7 @@ export default function RegistrationFormComponent() {
                 type="radio"
                 name="gender"
                 value="Женский"
-                checked={registerForm.gender === "Женский"}
+                checked={form.gender === "Женский"}
                 onChange={handleChange}
                 className="mr-2"
                 required
@@ -290,9 +302,7 @@ export default function RegistrationFormComponent() {
             Женский
           </label>
         </div>
-        {errors.gender && (
-          <div className="text-red-600 mt-1">{errors.gender}</div>
-        )}
+        {renderError("gender")}
       </Form.Field>
 
       <Form.Submit asChild>
@@ -304,8 +314,11 @@ export default function RegistrationFormComponent() {
         </button>
       </Form.Submit>
 
-      {message && (
-        <div className="mt-4 text-center text-red-600">{message}</div>
+      {/* Общие ошибки от сервера */}
+      {(errors.general || errors.message) && (
+        <div className="mt-4 text-center text-red-600">
+          {errors.general || errors.message}
+        </div>
       )}
     </Form.Root>
   );
