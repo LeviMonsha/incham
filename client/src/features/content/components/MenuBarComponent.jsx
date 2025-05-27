@@ -40,6 +40,14 @@ export default function MenuBar() {
             Секрет
           </NavigationMenu.Link>
         </NavigationMenu.Item>
+        <NavigationMenu.Item>
+          <NavigationMenu.Link
+            href="/auth"
+            className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition"
+          >
+            Выйти
+          </NavigationMenu.Link>
+        </NavigationMenu.Item>
       </NavigationMenu.List>
     </NavigationMenu.Root>
   );

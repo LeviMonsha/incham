@@ -65,14 +65,15 @@ const ProfilePage = () => {
               <ul className="mb-6 space-y-1">
                 <li>
                   <span className="font-semibold">Логин:</span>{" "}
-                  {profileData.login}
+                  {profileData.username}
                 </li>
                 <li>
-                  <span className="font-semibold">Имя:</span> {profileData.name}
+                  <span className="font-semibold">Имя:</span>{" "}
+                  {profileData.firstName}
                 </li>
                 <li>
                   <span className="font-semibold">Фамилия:</span>{" "}
-                  {profileData.surname}
+                  {profileData.lastName}
                 </li>
                 <li>
                   <span className="font-semibold">Email:</span>{" "}

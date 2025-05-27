@@ -9,29 +9,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   let isMounted = true;
-  //   axios
-  //     .get("/api/secure/session", { withCredentials: true })
-  //     .then((res) => {
-  //       if (isMounted) {
-  //         if (res.data.isAuthenticated) {
-  //           navigate("/main", { replace: true });
-  //         } else {
-  //           setLoading(false);
-  //         }
-  //       }
-  //     })
-  //     .catch(() => {
-  //       if (isMounted) setLoading(false);
-  //     });
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, [navigate]);
-
-  // if (loading) return <div>Загрузка...</div>;
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
       <MenuBar />
