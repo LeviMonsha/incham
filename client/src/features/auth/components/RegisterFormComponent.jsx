@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -19,7 +19,6 @@ export default function RegistrationFormComponent() {
   const [isAcceptRules, setAcceptRules] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const debounceRef = useRef({});
 
   const validateField = (name, value) => {
     let error = null;
@@ -52,32 +51,9 @@ export default function RegistrationFormComponent() {
         break;
     }
     setErrors((prev) => ({ ...prev, [name]: error }));
-
-    if (!error && (name === "email" || name === "username")) {
-      if (debounceRef.current[name]) clearTimeout(debounceRef.current[name]);
-      debounceRef.current[name] = setTimeout(async () => {
-        try {
-          const res = await axios.get(`/api/auth/check-${name}`, {
-            params: { [name]: value },
-          });
-          if (res.data.exists) {
-            setErrors((prev) => ({
-              ...prev,
-              [name]: `Пользователь с таким ${
-                name === "email" ? "email" : "логином"
-              } уже существует`,
-            }));
-          } else {
-            setErrors((prev) => ({ ...prev, [name]: null }));
-          }
-        } catch (e) {
-          setErrors("Ошибка сети");
-        }
-      }, 400);
-    }
   };
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "isAcceptRules") {
       setAcceptRules(checked);
@@ -89,7 +65,33 @@ export default function RegistrationFormComponent() {
     }
     const fieldValue = type === "checkbox" ? checked : value;
     setForm((prev) => ({ ...prev, [name]: fieldValue }));
+
     validateField(name, fieldValue);
+    console.log("Валидация");
+
+    try {
+      const res = await axios.get(`/api/auth/check-${name}`, {
+        params: { [name]: value },
+      });
+      if (res.data) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: `Пользователь с таким ${
+            name === "email" ? "email" : "логином"
+          } уже существует`,
+        }));
+      } else {
+        setErrors((prev) => ({ ...prev, [name]: null }));
+      }
+      console.log("Ошибки:", {
+        ...errors,
+        [name]: res.data
+          ? `Пользователь с таким ${
+              name === "email" ? "email" : "логином"
+            } уже существует`
+          : null,
+      });
+    } catch (error) {}
   };
 
   const handleSubmit = async (e) => {
@@ -123,6 +125,8 @@ export default function RegistrationFormComponent() {
     } catch (error) {
       if (error.response && error.response.data) setErrors(error.response.data);
     }
+    form.password = "";
+    form.confirmPassword = "";
   };
 
   const renderError = (name) =>
@@ -314,7 +318,6 @@ export default function RegistrationFormComponent() {
         </button>
       </Form.Submit>
 
-      {/* Общие ошибки от сервера */}
       {(errors.general || errors.message) && (
         <div className="mt-4 text-center text-red-600">
           {errors.general || errors.message}

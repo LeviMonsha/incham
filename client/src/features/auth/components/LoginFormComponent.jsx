@@ -60,7 +60,9 @@ export default function LoginFormComponent() {
         recaptchaRef.current?.reset();
       }
       setCaptchaValue(null);
+      loginForm.password = "";
     }
+    loginForm.password = "";
   };
 
   return (
